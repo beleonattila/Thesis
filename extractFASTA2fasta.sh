@@ -1,12 +1,12 @@
 #!/bin/bash
 # This script extract individual fasta files from a combined one by a list as input.
 # Define the input FASTA file and the file containing the list of desired IDs
-
+/home/projects/cge/data/projects/2024/projects_students/attila_beleon/thesis/data/Prodigal
 DIR="/home/projects/cge/data/projects/2024/projects_students/attila_beleon/thesis"
 
-input_fasta="$DIR/data/hmmer_results/bla_class_A-NCBIFAM_seq_IDs.faa"
-ids_file="$DIR/data/hmmer_results/bla_class_A-NCBIFAM_IDs4alphafold.txt"
-output_folder="$DIR/data/fasta/bla_class_A-NCBIFAM"
+input_fasta="$DIR/data/Prodigal/DTU_2018_1050_1_MG_HO_5.scaf.min1000.faa"
+ids_file="$DIR/data/hmmer_results/bla_class_A-NCBIFAM_IDs4alphafold2.txt"
+output_folder="$DIR/data/fasta/bla_class_A-NCBIFAM2"
 
 # Create the output folder if it doesn't exist
 mkdir -p $output_folder

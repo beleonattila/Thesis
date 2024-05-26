@@ -19,10 +19,10 @@ current_time = datetime.now().strftime("%Y-%m-%d_%H-%M")
 
 rule all:
     input:
-        f"{HMM_OUTDIR}/POI_ResFams_scores.domtblout",
-        f"{HMM_OUTDIR}/POI_AMRFinder_scores.domtblout"
+        f"{HMM_OUTDIR}/bla_ResFams_scores.domtblout",
+        f"{HMM_OUTDIR}/bla_AMRFinder_scores.domtblout"
 
-rule panres_bla_filter:
+rule panres_bla_ID_extract:
     input:
         f"{PROJECT_DIR}/apps/PanRes_v1_0_1/panres_annotations.tsv"
     output:
@@ -32,17 +32,28 @@ rule panres_bla_filter:
         awk -F'\t' '$2 == "class" && $3 == "beta_lactam" {{print $1}}' {input} | sort -u > {output}
         """
 
+rule PanRes_fasta_bla_filter:
+    input:
+        fasta=f"{PROJECT_DIR}/apps/PanRes_v1_0_1/panres_genes.fa",
+        bla_ids=f"{PROJECT_DIR}/apps/PanRes_v1_0_1/panres_bla_ids.txt"
+    output:
+        fasta=f"{PROJECT_DIR}/apps/PanRes_v1_0_1/panres_bla_genes.fa"
+    shell:
+        """
+		seqtk subseq {input.fasta} {input.bla_ids} > {output.fasta}
+        """
+		
 rule panres_protein_translation:
     input:
-        f"{PROJECT_DIR}/apps/PanRes_v1_0_1/panres_genes.fa"
+        f"{PROJECT_DIR}/apps/PanRes_v1_0_1/panres_bla_genes.fa"
     output:
-        f"{PROJECT_DIR}/apps/PanRes_v1_0_1/PanRes_prodigal/protein_translations.faa"
+        f"{PROJECT_DIR}/apps/PanRes_v1_0_1/PanRes_prodigal/PanRes_bla_proteins.faa"
     shell:
         """
         module load tools
         module load prodigal/2.6.3
-        mkdir -p f"{PROJECT_DIR}/apps/PanRes_v1_0_1/PanRes_prodigal
-        prodigal -i {input} -a {output}
+        mkdir -p f"{PROJECT_DIR}/apps/PanRes_v1_0_1/PanRes_prodigal"
+        prodigal -i {input} -p meta -a {output}
         """
 
 rule hmmpress_ResFams:
@@ -77,12 +88,12 @@ rule hmmpress_AMRFinder:
 
 rule hmmscan_PanRes_ResFams:
     input:
-        fasta_file=f"{PROJECT_DIR}/apps/PanRes_v1_0_1/PanRes_prodigal/protein_translations.faa",
+        fasta_file=f"{PROJECT_DIR}/apps/PanRes_v1_0_1/PanRes_prodigal/PanRes_bla_proteins.faa",
         isPressed=f"{PROJECT_DIR}/apps/ResFams/Resfams-full.hmm/Resfams-full.hmm.h3m"
     output:
-        score=f"{PROJECT_DIR}/apps/PanRes_v1_0_1/PanRes_prodigal/hmm_ResFams_scores.domtblout"
+        score=f"{PROJECT_DIR}/apps/PanRes_v1_0_1/PanRes_prodigal/PanRes_hmm_ResFams_scores.domtblout"
     resources:
-        cores=10
+        cores=18
     shell:
         """
         module load tools
@@ -92,12 +103,12 @@ rule hmmscan_PanRes_ResFams:
 
 rule hmmscan_PanRes_AMRFinder:
     input:
-        fasta_file=f"{PROJECT_DIR}/apps/PanRes_v1_0_1/PanRes_prodigal/protein_translations.faa",
+        fasta_file=f"{PROJECT_DIR}/apps/PanRes_v1_0_1/PanRes_prodigal/PanRes_bla_proteins.faa",
         isPressed=f"{PROJECT_DIR}/apps/NCBIfam-AMRFinder/AMRFinder-full.hmm/AMRFinder-full.hmm.h3m"
     output:
-        score=f"{PROJECT_DIR}/apps/PanRes_v1_0_1/PanRes_prodigal/hmm_AMRFinder_scores.domtblout"
+        score=f"{PROJECT_DIR}/apps/PanRes_v1_0_1/PanRes_prodigal/PanRes_hmm_AMRFinder_scores.domtblout"
     resources:
-        cores=10
+        cores=18
     shell:
         """
         module load tools
@@ -105,37 +116,10 @@ rule hmmscan_PanRes_AMRFinder:
         hmmscan --cpu {resources.cores} --domtblout {output.score} {PROJECT_DIR}/apps/NCBIfam-AMRFinder/AMRFinder-full.hmm/AMRFinder-full.hmm {input.fasta_file}
         """
 
-rule PanRes_id_restore:
-    input:
-        ResFams_score=f"{PROJECT_DIR}/apps/PanRes_v1_0_1/PanRes_prodigal/hmm_ResFams_scores.domtblout",
-        AMR_score=f"{PROJECT_DIR}/apps/PanRes_v1_0_1/PanRes_prodigal/hmm_AMRFinder_scores.domtblout"
-    output:
-        orig_id_ResFams_score=f"{PROJECT_DIR}/apps/PanRes_v1_0_1/PanRes_prodigal/hmm_ResFams_orig_id_scores.domtblout",
-        orig_id_AMR_score=f"{PROJECT_DIR}/apps/PanRes_v1_0_1/PanRes_prodigal/hmm_AMRFinder_orig_id_scores.domtblout"
-    shell:
-        """
-        awk '{{sub(/..$/, "", $4)}} 1' {input.ResFams_score} > {output.orig_id_ResFams_score}
-        awk '{{sub(/..$/, "", $4)}} 1' {input.AMR_score} > {output.orig_id_AMR_score}
-        """
-
-rule PanRes_hmmScore_bla_filter:
-    input:
-        ResFams=f"{PROJECT_DIR}/apps/PanRes_v1_0_1/PanRes_prodigal/hmm_ResFams_orig_id_scores.domtblout",
-        AMR=f"{PROJECT_DIR}/apps/PanRes_v1_0_1/PanRes_prodigal/hmm_AMRFinder_orig_id_scores.domtblout",
-        bla_id=f"{PROJECT_DIR}/apps/PanRes_v1_0_1/panres_bla_ids.txt"
-    output:
-        ResFams=f"{PROJECT_DIR}/apps/PanRes_v1_0_1/PanRes_prodigal/only_bla_ResFams_scores.domtblout",
-        AMR=f"{PROJECT_DIR}/apps/PanRes_v1_0_1/PanRes_prodigal/only_bla_AMR_scores.domtblout"
-    shell:
-        """
-        grep -Fwf {input.bla_id} {input.ResFams} > {output.ResFams}
-        grep -Fwf {input.bla_id} {input.AMR} > {output.AMR}
-        """
-
 rule PanRes_hmm_id_extract:
     input:
-        ResFams=f"{PROJECT_DIR}/apps/PanRes_v1_0_1/PanRes_prodigal/only_bla_ResFams_scores.domtblout",
-        AMR=f"{PROJECT_DIR}/apps/PanRes_v1_0_1/PanRes_prodigal/only_bla_AMR_scores.domtblout"
+        ResFams=f"{PROJECT_DIR}/apps/PanRes_v1_0_1/PanRes_prodigal/PanRes_hmm_ResFams_scores.domtblout",
+        AMR=f"{PROJECT_DIR}/apps/PanRes_v1_0_1/PanRes_prodigal/PanRes_hmm_AMRFinder_scores.domtblout"
     output:
         ResFams=f"{PROJECT_DIR}/apps/PanRes_v1_0_1/PanRes_prodigal/Panres_ResFams_bla_HMM_ids.txt",
         AMR=f"{PROJECT_DIR}/apps/PanRes_v1_0_1/PanRes_prodigal/Panres_AMR_bla_HMM_ids.txt"
@@ -188,58 +172,18 @@ rule hmmscan_AMRFinder:
         hmmscan --cpu {resources.cores} --domtblout {output.score} {PROJECT_DIR}/apps/NCBIfam-AMRFinder/AMRFinder-full.hmm/AMRFinder-full.hmm {input.fasta_file}
         """
 
-rule confident_hmm_hit_list:
-    input:
-        ResFams_score=f"{HMM_OUTDIR}/hmm_ResFams_scores.domtblout",
-        AMR_score=f"{HMM_OUTDIR}/hmm_AMRFinder_scores.domtblout"
-    output:
-        ResFams=f"{HMM_OUTDIR}/ResFams_confident_hit_list.txt",
-        AMR=f"{HMM_OUTDIR}/AMR_confident_hit_list.txt"
-    shell:
-        """
-        awk '!seen[$4]++' {input.ResFams_score} | awk '!/^#/ && $7 < 1e-5 {{print $4}}' > {output.ResFams}
-        awk '!seen[$4]++' {input.AMR_score} | awk '!/^#/ && $7 < 1e-5 {{print $4}}' > {output.AMR}
-        """
-        
-rule remove_confident_hits_from_hmm_scores:
-    input:
-        ResFams_score=f"{HMM_OUTDIR}/hmm_ResFams_scores.domtblout",
-        AMR_score=f"{HMM_OUTDIR}/hmm_AMRFinder_scores.domtblout",
-        ResFams_conf_list=f"{HMM_OUTDIR}/ResFams_confident_hit_list.txt",
-        AMR_conf_list=f"{HMM_OUTDIR}/AMR_confident_hit_list.txt"
-    output:
-        ResFams_score=f"{HMM_OUTDIR}/hmm_ResFams_low_confidence_scores.domtblout",
-        AMR_score=f"{HMM_OUTDIR}/hmm_AMRFinder_low_confidence_scores.domtblout"
-    shell:
-        """
-        awk 'FNR==NR {{ ids[$1]; next }} !($4 in ids)' {input.ResFams_conf_list} {input.ResFams_score} > {output.ResFams_score}
-        awk 'FNR==NR {{ ids[$1]; next }} !($4 in ids)' {input.AMR_conf_list} {input.AMR_score} > {output.AMR_score}
-        """
 
 rule bla_filter_sample_hmm_scores:
     input:
-        ResFams_score=f"{HMM_OUTDIR}/hmm_ResFams_low_confidence_scores.domtblout",
-        AMR_score=f"{HMM_OUTDIR}/hmm_AMRFinder_low_confidence_scores.domtblout",
+        ResFams_score=f"{HMM_OUTDIR}/hmm_ResFams_scores.domtblout",
+        AMR_score=f"{HMM_OUTDIR}/hmm_AMRFinder_scores.domtblout",
         ResFams_ids=f"{PROJECT_DIR}/apps/PanRes_v1_0_1/PanRes_prodigal/Panres_ResFams_bla_HMM_ids.txt",
         AMR_ids=f"{PROJECT_DIR}/apps/PanRes_v1_0_1/PanRes_prodigal/Panres_AMR_bla_HMM_ids.txt"
     output:
-        ResFams_score=f"{HMM_OUTDIR}/POI_ResFams_scores.domtblout",
-        AMR_score=f"{HMM_OUTDIR}/POI_AMRFinder_scores.domtblout"
+        ResFams_score=f"{HMM_OUTDIR}/bla_ResFams_scores.domtblout",
+        AMR_score=f"{HMM_OUTDIR}/bla_AMRFinder_scores.domtblout"
     shell:
         """
         grep -Fwf {input.ResFams_ids} {input.ResFams_score} > {output.ResFams_score}
         grep -Fwf {input.AMR_ids} {input.AMR_score} > {output.AMR_score}
-        """
-
-rule hmm_frequency:
-    input:
-        ResFams_score=f"{HMM_OUTDIR}/POI_ResFams_scores.domtblout",
-        AMR_score=f"{HMM_OUTDIR}/POI_AMRFinder_scores.domtblout"
-    output:
-        ResFams_freq=f"{HMM_OUTDIR}/POI_ResFams_freq.txt",
-        AMR_freq=f"{HMM_OUTDIR}/POI_AMRFinder_freq.txt"
-    shell:
-        """
-        awk '!/^#/ {print $1}' {input.AMR_score} | sort | uniq -c | sort > {output.AMR_freq}
-        awk '!/^#/ {print $1}' {input.ResFams_score} | sort | uniq -c | sort > {output.ResFams_freq}
         """

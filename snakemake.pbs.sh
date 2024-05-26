@@ -18,6 +18,7 @@
 module purge
 module load tools
 module load snakemake/8.4.2
+module load seqtk/1.4
 
 cd $PBS_O_WORKDIR
 
