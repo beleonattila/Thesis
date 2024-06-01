@@ -37,6 +37,6 @@ def parse_stockholm_and_extract_snippets(input_file, output_file):
             outfile.write(f">{seq_id}\n{snippet}\n")
 
 # Example usage
-input_filename = '/home/projects/cge/data/projects/2024/projects_students/attila_beleon/thesis/data/hmmer_results/alig_bla_class_A-NCBIFAM_2.pfam'
-output_filename = '/home/projects/cge/data/projects/2024/projects_students/attila_beleon/thesis/data/hmmer_results/bla_class_A-NCBIFAM_extracted_snippets_full_2.txt'
+input_filename = '/home/projects/cge/data/projects/2024/projects_students/attila_beleon/thesis/data/hmmer_results/alig_bla_class_A-NCBIFAM.pfam'
+output_filename = '/home/projects/cge/data/projects/2024/projects_students/attila_beleon/thesis/data/hmmer_results/bla_class_A-NCBIFAM_extracted_snippets_full.txt'
 parse_stockholm_and_extract_snippets(input_filename, output_filename)
