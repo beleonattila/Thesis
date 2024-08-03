@@ -12,7 +12,7 @@
 ### Memory
 #PBS -l mem=16gb
 ### Requesting time - format is <days>:<hours>:<minutes>:<seconds> (here, 1 hour)
-#PBS -l walltime=1:00:00
+#PBS -l walltime=8:00:00
 ##
 
 module purge
@@ -22,9 +22,9 @@ module load prodigal/2.6.3
 
 cd $PBS_O_WORKDIR
 
-INPUT_DIR="/home/projects/cge/data/projects/2024/projects_students/attila_beleon/thesis/apps/PanRes_v1_0_1"
-OUT_DIR=$INPUT_DIR/PanRes_prodigal
+INPUT_DIR="/home/projects/cge/data/projects/other/dist_decay_sewage/flankophile/input"
+OUT_DIR="/home/projects/cge/data/projects/2024/projects_students/attila_beleon/thesis/temp/Prodigal"
 
 mkdir -p $OUT_DIR
 
-prodigal -i $INPUT_DIR/panres_genes.fa -o $OUT_DIR/gene_coords.gbk -a $OUT_DIR/protein_translations.faa
+prodigal -i $INPUT_DIR/DTU_2018_1050_1_MG_HO_5.scaf.min1000.fa -d $OUT_DIR/sample1_genes.fa -q -p meta

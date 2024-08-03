@@ -12,7 +12,7 @@
 ### Memory
 #PBS -l mem=180gb
 ### Requesting time - format is <days>:<hours>:<minutes>:<seconds> (here, 1 hour)
-#PBS -l walltime=48:00:00
+#PBS -l walltime=20:00:00
 ##
 
 module purge
@@ -23,5 +23,5 @@ module load seqtk/1.4
 cd $PBS_O_WORKDIR
 
 snakemake --unlock
-snakemake --cores 40 --max-status-checks-per-second 0.001 --rerun-incomplete
+snakemake --cores 40 --max-status-checks-per-second 0.001 --rerun-incomplete --latency-wait 60
 snakemake --dag | dot -Tpng > dag.png

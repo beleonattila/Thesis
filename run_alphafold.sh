@@ -33,7 +33,7 @@ for file in ${datadir}/*.faa ; do
  
   # Run AlphaFold
   printf "\n# Run AlphaFold\n" >> $script
-  printf "/usr/bin/time -v -o ${logdir}/${filename}.time /services/tools/alphafold/2.3.2/run_alphafold.sh -d /home/databases/alphafold -o $resultdir -f $file -t 2024-01-01 -r false\n\n" >> $script
+  printf "/usr/bin/time -v -o ${logdir}/${filename}.time /services/tools/alphafold/2.3.2/run_alphafold.sh -d /home/databases/alphafold -o $resultdir -f $file -t 2024-01-01 -l 1 -r false\n\n" >> $script
 
   # Qsub script
   qsub -W group_list=cge -A cge -d `pwd` -l nodes=1:gpus=1:ppn=40,mem=150gb,walltime="10:00:00" -r y -N $filename -o $logdir -e $logdir $script
